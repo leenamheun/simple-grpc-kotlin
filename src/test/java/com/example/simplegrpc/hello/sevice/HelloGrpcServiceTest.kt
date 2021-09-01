@@ -4,8 +4,9 @@ import com.examples.grpc.Hello
 import com.examples.grpc.HelloServiceGrpcKt
 import io.grpc.ManagedChannelBuilder
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.runBlockingTest
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
 
@@ -35,21 +36,34 @@ internal class HelloGrpcServiceTest(
         println("call - simpleTest")
     }
 
-
-    suspend fun suspendTest() {
-        delay(500)
-        println("suspendTest")
+    suspend fun multiResponseTest() {
+        delay(5000)
+        val request = Hello.HelloRequest.newBuilder().setName("hello !!!!!!").build()
+        val response = stub.lotsOfResponse(request).let {
+            it.collect { value -> println("response ${value}") }
+        }
     }
 
     @Test
-    fun callSuspendTest() = runBlockingTest {
-        suspendTest()
-        println("call - suspendTest")
+    fun callMultiResponseTest() = runBlocking {
+        multiResponseTest()
     }
 
+    suspend fun biMultiTest() {
+        delay(5000)
+        val request1 = Hello.HelloRequest.newBuilder().setName("hi ").build()
+        val request2 = Hello.HelloRequest.newBuilder().setName("this is test").build()
+        val request3 = Hello.HelloRequest.newBuilder().setName("hahaha :0 ) ").build()
+
+        val requests = mutableListOf(request1, request2, request3).asFlow()
+
+        val response = stub.bidiHello(requests).let {
+            it.collect { value -> println("response ${value}") }
+        }
+    }
 
     @Test
-    fun test() {
-        println("zzzzzzzR")
+    fun callBiMultiTest() = runBlocking {
+        biMultiTest()
     }
 }
